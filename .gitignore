@@ -8,6 +8,6 @@ build/
 .wrangler/
 .dev.vars
 
-# Sandbox used by the Filesystem/Git MCP servers - contents are generated at demo time
-chatbot/workspace/*
-!chatbot/workspace/.gitkeep
+# Sandbox used by the Filesystem/Git MCP servers - bootstrapped automatically at
+# startup (see workspaceBootstrap.ts), including its own nested .git repo.
+chatbot/workspace/
