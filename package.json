@@ -1,0 +1,15 @@
+{
+  "name": "cc3067-proyecto1",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MCP-based console chatbot for CC3067 Redes - Proyecto 1",
+  "workspaces": [
+    "chatbot",
+    "servers/*"
+  ],
+  "scripts": {
+    "chatbot": "npm run start --workspace=chatbot",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "license": "MIT"
+}
