@@ -3,7 +3,11 @@ dist/
 build/
 .env
 *.log
-logs/*.jsonl
+**/logs/*.jsonl
 .DS_Store
 .wrangler/
 .dev.vars
+
+# Sandbox used by the Filesystem/Git MCP servers - contents are generated at demo time
+chatbot/workspace/*
+!chatbot/workspace/.gitkeep
