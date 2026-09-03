@@ -14,9 +14,9 @@ This project is being built incrementally. Current state:
 
 - [x] Connect to the Anthropic API and answer general questions
 - [x] Maintain conversation context across turns
-- [ ] Log every MCP request/response
-- [ ] Filesystem MCP server + Git MCP server (official)
-- [ ] Custom local MCP server: DocFinder
+- [x] Log every MCP request/response
+- [x] Filesystem MCP server + Git MCP server (official)
+- [x] Custom local MCP server: DocFinder
 - [ ] Two classmates' MCP servers
 - [ ] Remote MCP server (Cloudflare Workers)
 - [ ] Wireshark capture and protocol analysis
@@ -33,19 +33,29 @@ CC3067-Proyecto1/
 ```
 
 The custom local MCP server **DocFinder** lives in its own public repository
-(required by the assignment): _link to be added once published_.
+(required by the assignment):
+[DufreyM/CC3067-Proyecto1-docfinder](https://github.com/DufreyM/CC3067-Proyecto1-docfinder). Clone it as a sibling
+folder of this repository (default expected path) or point `DOCFINDER_SERVER_PATH` in `.env` at wherever you
+cloned it.
 
 ## Requirements
 
 - Node.js >= 20
+- Python >= 3.10 with `pip install mcp-server-git` (official Git MCP server)
 - An Anthropic API key ([console.anthropic.com](https://console.anthropic.com))
 
 ## Setup
 
 ```bash
+# 1. This repo
 npm install
 cp .env.example .env
 # edit .env and set ANTHROPIC_API_KEY
+
+# 2. DocFinder (functionality 5), as a sibling folder
+cd ..
+git clone https://github.com/DufreyM/CC3067-Proyecto1-docfinder.git docfinder-mcp-server
+cd docfinder-mcp-server && npm install
 ```
 
 ## Usage
