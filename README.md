@@ -17,7 +17,7 @@ This project is being built incrementally. Current state:
 - [x] Log every MCP request/response
 - [x] Filesystem MCP server + Git MCP server (official)
 - [x] Custom local MCP server: DocFinder
-- [ ] Two classmates' MCP servers
+- [x] Classmates' MCP servers (hotel, HR/construction, coffee shop - 3, two required)
 - [ ] Remote MCP server (Cloudflare Workers)
 - [ ] Wireshark capture and protocol analysis
 - [ ] Final report
@@ -38,10 +38,23 @@ The custom local MCP server **DocFinder** lives in its own public repository
 folder of this repository (default expected path) or point `DOCFINDER_SERVER_PATH` in `.env` at wherever you
 cloned it.
 
+For functionality 6, this chatbot connects to three classmates' local MCP servers (two are the assignment's
+minimum), each cloned as a sibling of this repo under `external-mcp-servers/`:
+
+| Server | Repo | Language | Command this project runs |
+| --- | --- | --- | --- |
+| `hotel` | [JosFer720/hotel-mcp-server](https://github.com/JosFer720/hotel-mcp-server) | Python | `.venv/Scripts/python.exe -m hotel_mcp` |
+| `rrhh` | [NESHGP04/mcp-server-rrhh-construccion](https://github.com/NESHGP04/mcp-server-rrhh-construccion) | Python | `.venv/Scripts/python.exe server.py` |
+| `brewops` | [Jonialen/brewops-mcp](https://github.com/Jonialen/brewops-mcp) | Go | compiled `brewops.exe` binary |
+
+Every path can be overridden with an env var (see `.env.example`) if you cloned them somewhere else.
+
 ## Requirements
 
 - Node.js >= 20
 - Python >= 3.10 with `pip install mcp-server-git` (official Git MCP server)
+- Python >= 3.12 (for `hotel-mcp-server` and `mcp-server-rrhh-construccion`, see below)
+- Go >= 1.25 (to build `brewops-mcp`), or Docker as an alternative
 - An Anthropic API key ([console.anthropic.com](https://console.anthropic.com))
 
 ## Setup
@@ -56,7 +69,31 @@ cp .env.example .env
 cd ..
 git clone https://github.com/DufreyM/CC3067-Proyecto1-docfinder.git docfinder-mcp-server
 cd docfinder-mcp-server && npm install
+cd ..
+
+# 3. Classmates' servers (functionality 6), as siblings under external-mcp-servers/
+mkdir external-mcp-servers && cd external-mcp-servers
+
+git clone https://github.com/JosFer720/hotel-mcp-server.git
+cd hotel-mcp-server && python -m venv .venv && ./.venv/Scripts/python -m pip install -e . && cd ..
+
+git clone https://github.com/NESHGP04/mcp-server-rrhh-construccion.git
+cd mcp-server-rrhh-construccion && python -m venv .venv && ./.venv/Scripts/python -m pip install -r requirements.txt && cd ..
+
+git clone https://github.com/Jonialen/brewops-mcp.git
+cd brewops-mcp && go build -o brewops.exe . && cd ../..
 ```
+
+Any of these three servers that fails to start (wrong path, missing runtime) is skipped with a warning - the
+chatbot still runs with whichever servers did connect.
+
+### Design note: confirming writes across turns
+
+`hotel-mcp-server`'s `crear_reservacion` tool only writes when called a second time with `confirmado: true`; its
+README explicitly warns that a host must not let the model call the preview and the confirmed write back to back
+in the same reply, since only the host can see that a real user message arrived in between. This chatbot enforces
+that in [`chatbot/src/mcp/confirmationGate.ts`](chatbot/src/mcp/confirmationGate.ts): a `confirmado: true` call is
+rejected unless the preview happened in an earlier user turn.
 
 ## Usage
 
