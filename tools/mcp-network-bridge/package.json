@@ -1,0 +1,19 @@
+{
+  "name": "mcp-network-bridge",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Generic stdio-to-Streamable-HTTP bridge for any MCP server, so it can be reached over a local network",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/bridge.ts",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

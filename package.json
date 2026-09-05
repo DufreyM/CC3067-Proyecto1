@@ -5,10 +5,12 @@
   "description": "MCP-based console chatbot for CC3067 Redes - Proyecto 1",
   "workspaces": [
     "chatbot",
-    "servers/*"
+    "servers/*",
+    "tools/*"
   ],
   "scripts": {
     "chatbot": "npm run start --workspace=chatbot",
+    "bridge": "npm run start --workspace=mcp-network-bridge --",
     "build": "npm run build --workspaces --if-present"
   },
   "license": "MIT"
