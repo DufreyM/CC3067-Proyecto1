@@ -15,12 +15,9 @@ function venvPython(repoPath: string): string {
  */
 export const workspaceDir = resolve(__dirname, "../../workspace");
 
-export interface McpServerConfig {
-  name: string;
-  command: string;
-  args?: string[];
-  cwd?: string;
-}
+export type McpServerConfig =
+  | { name: string; transport?: "stdio"; command: string; args?: string[]; cwd?: string }
+  | { name: string; transport: "http"; url: string };
 
 /**
  * DocFinder (functionality 5) lives in its own public repo, as required by
@@ -87,5 +84,17 @@ export const mcpServers: McpServerConfig[] = [
   {
     name: "brewops",
     command: brewopsBinary,
+  },
+  {
+    // Revised functionality 6: connect to a classmate's MCP server "as if
+    // remote", over the local network, using the exact same tool-calling
+    // code path as every stdio server above - only the transport differs.
+    // Run tools/mcp-network-bridge in front of any of the three stdio
+    // servers to produce this URL (see that tool's README); for a real LAN
+    // demo across two machines, point MCP_REMOTE_URL at the host's LAN IP
+    // instead of localhost.
+    name: "hotel-remote",
+    transport: "http",
+    url: process.env.MCP_REMOTE_URL ?? "http://localhost:4100/mcp",
   },
 ];

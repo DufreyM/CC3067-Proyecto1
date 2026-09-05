@@ -1,5 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { Tool } from "@anthropic-ai/sdk/resources/messages";
 import type { McpLogger } from "../logging/mcpLogger.js";
 import { mcpServers, type McpServerConfig } from "./serversConfig.js";
@@ -39,14 +41,15 @@ export class McpClientManager {
 
   private async connectServer(serverConfig: McpServerConfig): Promise<void> {
     const client = new Client({ name: `cc3067-chatbot-${serverConfig.name}`, version: "0.1.0" }, { capabilities: {} });
-    const transport = new StdioClientTransport({
-      command: serverConfig.command,
-      args: serverConfig.args,
-      cwd: serverConfig.cwd,
-    });
+    const transport: Transport =
+      serverConfig.transport === "http"
+        ? new StreamableHTTPClientTransport(new URL(serverConfig.url))
+        : new StdioClientTransport({ command: serverConfig.command!, args: serverConfig.args, cwd: serverConfig.cwd });
+
     await client.connect(transport);
     this.servers.push({ name: serverConfig.name, client });
-    console.log(`[MCP] Conectado a servidor "${serverConfig.name}"`);
+    const via = serverConfig.transport === "http" ? `http, ${serverConfig.url}` : "stdio";
+    console.log(`[MCP] Conectado a servidor "${serverConfig.name}" (${via})`);
   }
 
   async listAnthropicTools(): Promise<Tool[]> {
