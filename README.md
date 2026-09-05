@@ -3,10 +3,17 @@
 Console chatbot (host) that talks to the Anthropic API and uses the **Model
 Context Protocol (MCP)** to extend the LLM with external tools: a local
 filesystem server, a git server, a custom local server (**DocFinder**, an
-internal documentation search assistant), servers built by classmates, and a
-remote MCP server.
+internal documentation search assistant), and three servers built by
+classmates - one of which is also reached over the local network instead of
+spawned locally, through a small generic bridge built for this project.
 
 > Project for CC3067 - Redes, Universidad del Valle de Guatemala.
+>
+> Scope note: per an in-class clarification, functionality 6 was revised to
+> require reaching a classmate's server over a local network connection
+> (instead of building an own cloud-hosted remote server), and the Wireshark
+> capture/analysis requirement was dropped entirely. This README reflects
+> that revised scope, not the original written assignment PDF.
 
 ## Status
 
@@ -17,19 +24,17 @@ This project is being built incrementally. Current state:
 - [x] Log every MCP request/response
 - [x] Filesystem MCP server + Git MCP server (official)
 - [x] Custom local MCP server: DocFinder
-- [x] Classmates' MCP servers (hotel, HR/construction, coffee shop - 3, two required)
-- [ ] Remote MCP server (Cloudflare Workers)
-- [ ] Wireshark capture and protocol analysis
+- [x] Classmates' MCP servers, local via stdio (hotel, HR/construction, coffee shop - 3, two required)
+- [x] One classmate's server reached "as remote", over the local network (generic stdio-to-HTTP bridge)
 - [ ] Final report
 
 ## Repository layout
 
 ```
 CC3067-Proyecto1/
-├── chatbot/          # Console host: Anthropic API client, MCP clients, logging
-├── servers/
-│   └── remote/       # Remote MCP server (deployed to Cloudflare Workers)
-└── docs/             # Report, Wireshark captures, MCP server specs
+├── chatbot/                  # Console host: Anthropic API client, MCP clients, logging
+└── tools/
+    └── mcp-network-bridge/   # Generic stdio-to-HTTP bridge for the local-network demo
 ```
 
 The custom local MCP server **DocFinder** lives in its own public repository
@@ -48,6 +53,15 @@ minimum), each cloned as a sibling of this repo under `external-mcp-servers/`:
 | `brewops` | [Jonialen/brewops-mcp](https://github.com/Jonialen/brewops-mcp) | Go | compiled `brewops.exe` binary |
 
 Every path can be overridden with an env var (see `.env.example`) if you cloned them somewhere else.
+
+### Reaching a classmate's server "as remote", over the local network
+
+None of the three servers above expose a network transport on their own (all three are stdio-only), so
+[`tools/mcp-network-bridge`](tools/mcp-network-bridge) wraps any of them - unmodified - and re-exposes it over
+HTTP on a LAN-reachable port. The chatbot's `hotel-remote` entry connects to it with the official
+`StreamableHTTPClientTransport`, using the exact same tools as the stdio `hotel` entry - only the transport
+differs. See that tool's README for how to run it (locally, or on a second machine on the same network) and how
+to point `MCP_REMOTE_URL` at it.
 
 ## Requirements
 
@@ -98,6 +112,9 @@ rejected unless the preview happened in an earlier user turn.
 ## Usage
 
 ```bash
+# Optional: serve the hotel server over the network too (see tools/mcp-network-bridge/README.md)
+npm run bridge -- --port 4100 --cwd external-mcp-servers/hotel-mcp-server -- external-mcp-servers/hotel-mcp-server/.venv/Scripts/python.exe -m hotel_mcp
+
 npm run chatbot
 ```
 
