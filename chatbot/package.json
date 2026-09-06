@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
+    "web-server": "tsx src/server.ts",
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/index.ts"
   },
@@ -12,10 +13,12 @@
     "@anthropic-ai/sdk": "^0.32.0",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "chalk": "^5.3.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

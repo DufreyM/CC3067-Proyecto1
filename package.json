@@ -11,6 +11,8 @@
   "scripts": {
     "chatbot": "npm run start --workspace=chatbot",
     "bridge": "npm run start --workspace=mcp-network-bridge --",
+    "web-server": "npm run web-server --workspace=chatbot",
+    "web-client": "npm run dev --prefix chatbot/web",
     "build": "npm run build --workspaces --if-present"
   },
   "license": "MIT"
