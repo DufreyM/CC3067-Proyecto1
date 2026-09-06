@@ -38,6 +38,22 @@ Then open the URL Vite prints (default `http://localhost:5173`). The backend lis
   terminal.
 - **Input**: `Sender` from `@ant-design/x`, disabled while disconnected and while waiting for a reply.
 
+## Access control - this backend spends real money
+
+Every chat message triggers a real Anthropic API call billed to whoever's `ANTHROPIC_API_KEY` is configured, so
+[`chatbot/src/server.ts`](../src/server.ts) treats that as a security boundary, not an afterthought:
+
+- **Loopback-only by default.** `httpServer.listen(PORT, HOST)` binds to `127.0.0.1` unless you set
+  `WEB_SERVER_HOST` - so out of the box nobody else on your network can even reach it, regardless of what's in
+  the frontend.
+- **Optional access code.** Set `WEB_UI_ACCESS_CODE` in `chatbot/.env` and the frontend shows a lock-screen
+  (`AccessGate` in `App.tsx`) before any chat happens: it sends `{type: "auth", code}` over the WebSocket, and the
+  backend only processes `user_message` / `toggle_classmates` for connections it has marked authenticated. Leave
+  it unset for a purely local, single-user run - no gate, no friction.
+- If you do set `WEB_SERVER_HOST` to something other than `127.0.0.1` (e.g. to demo across two machines) without
+  also setting `WEB_UI_ACCESS_CODE`, the backend prints a warning on startup, because at that point anyone on the
+  network can spend your credits.
+
 ## Why Ant Design / `@ant-design/x`
 
 `@ant-design/x` ships components purpose-built for LLM chat UIs (`Bubble.List`, `Sender`) instead of generic

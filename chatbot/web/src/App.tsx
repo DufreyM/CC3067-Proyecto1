@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { Bubble, Sender } from "@ant-design/x";
 import type { BubbleListProps } from "@ant-design/x";
-import { Avatar, Badge, Layout, Space, Switch, Tag, Typography, theme } from "antd";
-import { CheckCircleFilled, CloseCircleFilled, RobotOutlined, ToolOutlined, UserOutlined } from "@ant-design/icons";
+import { Alert, Avatar, Badge, Button, Card, Flex, Input, Layout, Space, Switch, Tag, Typography, theme } from "antd";
+import {
+  CheckCircleFilled,
+  CloseCircleFilled,
+  LockOutlined,
+  RobotOutlined,
+  ToolOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import ReactMarkdown from "react-markdown";
 import { useChatSocket } from "./useChatSocket";
 
@@ -53,6 +60,49 @@ const EXAMPLE_PROMPTS: { server: string; example: string }[] = [
 ];
 const DEFAULT_PLACEHOLDER = "Escribe tu mensaje...";
 
+function AccessGate({
+  connected,
+  authFailed,
+  onSubmit,
+}: {
+  connected: boolean;
+  authFailed: boolean;
+  onSubmit: (code: string) => void;
+}) {
+  const [code, setCode] = useState("");
+  const { token } = theme.useToken();
+
+  return (
+    <Flex align="center" justify="center" style={{ height: "100vh", background: token.colorBgLayout }}>
+      <Card style={{ width: 360 }}>
+        <Flex vertical gap="middle">
+          <Flex align="center" gap="small">
+            <LockOutlined style={{ fontSize: 20 }} />
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              Acceso al chatbot
+            </Typography.Title>
+          </Flex>
+          <Typography.Text type="secondary">
+            Este chatbot usa una API paga. Ingresa el codigo de acceso para continuar.
+          </Typography.Text>
+          {authFailed && <Alert type="error" showIcon title="Codigo incorrecto" />}
+          <Input.Password
+            placeholder="Codigo de acceso"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            onPressEnter={() => onSubmit(code)}
+            disabled={!connected}
+            autoFocus
+          />
+          <Button type="primary" block disabled={!connected || !code} onClick={() => onSubmit(code)}>
+            Entrar
+          </Button>
+        </Flex>
+      </Card>
+    </Flex>
+  );
+}
+
 export default function App() {
   const {
     connected,
@@ -64,9 +114,17 @@ export default function App() {
     classmatesEnabled,
     togglingClassmates,
     toggleClassmates,
+    authRequired,
+    authenticated,
+    authFailed,
+    submitAccessCode,
   } = useChatSocket();
   const [inputValue, setInputValue] = useState("");
   const { token } = theme.useToken();
+
+  if (authRequired && !authenticated) {
+    return <AccessGate connected={connected} authFailed={authFailed} onSubmit={submitAccessCode} />;
+  }
 
   const connectedNames = new Set(servers.filter((s) => s.ok).map((s) => s.name));
   const example = EXAMPLE_PROMPTS.find((hint) => connectedNames.has(hint.server));

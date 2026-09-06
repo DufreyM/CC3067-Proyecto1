@@ -24,6 +24,9 @@ export function useChatSocket() {
   const [waitingForReply, setWaitingForReply] = useState(false);
   const [classmatesEnabled, setClassmatesEnabled] = useState(false);
   const [togglingClassmates, setTogglingClassmates] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
+  const [authenticated, setAuthenticated] = useState(true);
+  const [authAttempted, setAuthAttempted] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -45,6 +48,10 @@ export function useChatSocket() {
         case "classmates_status":
           setClassmatesEnabled(message.enabled);
           setTogglingClassmates(message.toggling);
+          break;
+        case "auth_status":
+          setAuthRequired(message.required);
+          setAuthenticated(message.authenticated);
           break;
         case "assistant_message":
           setItems((prev) => [...prev, { key: newKey(), role: "ai", content: message.text }]);
@@ -94,6 +101,12 @@ export function useChatSocket() {
     wsRef.current.send(JSON.stringify({ type: "toggle_classmates", enabled }));
   }
 
+  function submitAccessCode(code: string): void {
+    if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+    setAuthAttempted(true);
+    wsRef.current.send(JSON.stringify({ type: "auth", code }));
+  }
+
   return {
     connected,
     servers,
@@ -104,5 +117,9 @@ export function useChatSocket() {
     classmatesEnabled,
     togglingClassmates,
     toggleClassmates,
+    authRequired,
+    authenticated,
+    authFailed: authAttempted && authRequired && !authenticated,
+    submitAccessCode,
   };
 }
