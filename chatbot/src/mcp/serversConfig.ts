@@ -45,10 +45,21 @@ const brewopsBinary =
   join(externalServersDir, "brewops-mcp", isWindows ? "brewops.exe" : "brewops");
 
 /**
+ * A 4th classmate's server (library catalogue), from a full project repo
+ * (https://github.com/tismajo/CC3067-Proyecto1) rather than an independent
+ * one. Its stdio server lives at backend/mcp_servers/local_library and needs
+ * a real MySQL database - see README "Servidor de biblioteca (tismajo)" for
+ * how to provision one with Docker; it is not self-seeding like the other
+ * three. Expected to be cloned under external-mcp-servers/tismajo-proyecto1.
+ */
+const bibliotecaBackendPath =
+  process.env.BIBLIOTECA_SERVER_PATH ?? join(externalServersDir, "tismajo-proyecto1", "backend");
+
+/**
  * Official MCP servers used for functionality 4 of the project.
  * - filesystem: @modelcontextprotocol/server-filesystem (npm, sandboxed to workspaceDir)
  * - git: mcp-server-git (PyPI, official Anthropic MCP server for git)
- * Plus the custom local server for functionality 5 (DocFinder) and three
+ * Plus the custom local server for functionality 5 (DocFinder) and four
  * classmates' servers for functionality 6.
  */
 export const mcpServers: McpServerConfig[] = [
@@ -84,6 +95,12 @@ export const mcpServers: McpServerConfig[] = [
   {
     name: "brewops",
     command: brewopsBinary,
+  },
+  {
+    name: "biblioteca",
+    command: process.env.BIBLIOTECA_SERVER_PYTHON ?? venvPython(bibliotecaBackendPath),
+    args: ["-m", "mcp_servers.local_library.server"],
+    cwd: bibliotecaBackendPath,
   },
   {
     // Revised functionality 6: connect to a classmate's MCP server "as if
