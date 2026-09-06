@@ -33,7 +33,13 @@ async function main() {
   console.log('Escribe tu mensaje (o "salir" para terminar).\n');
 
   while (true) {
-    const userInput = (await rl.question("Tu > ")).trim();
+    let rawInput: string;
+    try {
+      rawInput = await rl.question("Tu > ");
+    } catch {
+      break; // stdin closed (EOF from piped input, Ctrl+D, etc.) - exit cleanly
+    }
+    const userInput = rawInput.trim();
     if (EXIT_COMMANDS.has(userInput.toLowerCase())) break;
     if (!userInput) continue;
 
