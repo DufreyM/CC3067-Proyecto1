@@ -5,13 +5,18 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { Tool } from "@anthropic-ai/sdk/resources/messages";
 import type { McpLogger } from "../logging/mcpLogger.js";
 import { mcpServers, type McpServerConfig } from "./serversConfig.js";
-import { printServerStatus } from "../ui/console.js";
 
 const TOOL_NAME_SEPARATOR = "__";
 
 interface ConnectedServer {
   name: string;
   client: Client;
+}
+
+export interface ServerConnectionResult {
+  name: string;
+  ok: boolean;
+  detail: string;
 }
 
 /**
@@ -26,18 +31,22 @@ export class McpClientManager {
 
   constructor(private readonly logger: McpLogger) {}
 
-  async connectAll(configs: McpServerConfig[] = mcpServers): Promise<void> {
+  async connectAll(configs: McpServerConfig[] = mcpServers): Promise<ServerConnectionResult[]> {
+    const results: ServerConnectionResult[] = [];
     for (const serverConfig of configs) {
       try {
-        await this.connectServer(serverConfig);
+        const detail = await this.connectServer(serverConfig);
+        results.push({ name: serverConfig.name, ok: true, detail });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        printServerStatus(serverConfig.name, false, message);
+        results.push({ name: serverConfig.name, ok: false, detail: message });
       }
     }
+    return results;
   }
 
-  private async connectServer(serverConfig: McpServerConfig): Promise<void> {
+  /** Connects one server and returns a short description of how (for status display). */
+  private async connectServer(serverConfig: McpServerConfig): Promise<string> {
     const client = new Client({ name: `cc3067-chatbot-${serverConfig.name}`, version: "0.1.0" }, { capabilities: {} });
     const transport: Transport =
       serverConfig.transport === "http"
@@ -46,8 +55,7 @@ export class McpClientManager {
 
     await client.connect(transport);
     this.servers.push({ name: serverConfig.name, client });
-    const via = serverConfig.transport === "http" ? `http, ${serverConfig.url}` : "stdio";
-    printServerStatus(serverConfig.name, true, via);
+    return serverConfig.transport === "http" ? `http, ${serverConfig.url}` : "stdio";
   }
 
   async listAnthropicTools(): Promise<Tool[]> {
