@@ -70,6 +70,25 @@ MySQL database instead of a self-seeding file - see "Provisioning MySQL for `bib
 Spanish accented characters mojibake'd (e.g. `EducaciÃ³n`) because its DB connection doesn't set `charset=utf8mb4` -
 a bug in that server, left as-is since this project only consumes it over stdio.
 
+### Adding any other classmate's server, without touching code
+
+If you need to plug in a server that isn't one of the four above (e.g. assigned on presentation day):
+
+1. `git clone` their repo somewhere - conventionally under `external-mcp-servers/`, but any path works.
+2. Follow **their own README** to install its dependencies (venv + pip, `npm install`, `go build`, whatever it
+   needs) - this project can't automate that part, since every classmate's server is set up differently.
+3. Copy [`mcp-servers.local.example.json`](mcp-servers.local.example.json) to `mcp-servers.local.json` (gitignored,
+   personal to your machine) at the repo root, and add one entry with the command that launches their server:
+   ```json
+   [{ "name": "su-servidor", "command": "C:\\path\\...\\python.exe", "args": ["-m", "su_modulo"], "cwd": "C:\\path\\..." }]
+   ```
+4. Restart the chatbot (or, in the web UI, just flip the "Servidores de compañeros" switch off and back on) with
+   `ENABLE_CLASSMATE_SERVERS=true`.
+
+No TypeScript file needs editing or recompiling - [`serversConfig.ts`](chatbot/src/mcp/serversConfig.ts) reads
+`mcp-servers.local.json` at startup and folds its entries into the same classmates group the toggle already
+controls.
+
 ### Reaching a classmate's server "as remote", over the local network
 
 None of the three servers above expose a network transport on their own (all three are stdio-only), so
