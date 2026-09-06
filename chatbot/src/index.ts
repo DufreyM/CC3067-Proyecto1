@@ -7,6 +7,18 @@ import { McpClientManager } from "./mcp/mcpClientManager.js";
 import { McpLogger } from "./logging/mcpLogger.js";
 import { ensureWorkspaceRepo } from "./mcp/workspaceBootstrap.js";
 import { ConfirmationGate, readBooleanField } from "./mcp/confirmationGate.js";
+import {
+  printAssistant,
+  printBanner,
+  printExampleHints,
+  printFatalError,
+  printGoodbye,
+  printToolBlocked,
+  printToolCall,
+  printToolError,
+  printToolsSummary,
+  userPromptLabel,
+} from "./ui/console.js";
 
 const EXIT_COMMANDS = new Set(["salir", "exit", "quit"]);
 
@@ -23,19 +35,19 @@ async function main() {
   const mcp = new McpClientManager(logger);
   const confirmationGate = new ConfirmationGate();
 
+  printBanner();
   await ensureWorkspaceRepo();
   await mcp.connectAll();
   const tools = await mcp.listAnthropicTools();
-  console.log(`[MCP] ${tools.length} herramientas disponibles: ${tools.map((t) => t.name).join(", ") || "(ninguna)"}\n`);
+  printToolsSummary(tools);
+  printExampleHints();
 
   const rl = createInterface({ input: stdin, output: stdout });
-  console.log("Chatbot MCP - CC3067 Proyecto 1");
-  console.log('Escribe tu mensaje (o "salir" para terminar).\n');
 
   while (true) {
     let rawInput: string;
     try {
-      rawInput = await rl.question("Tu > ");
+      rawInput = await rl.question(userPromptLabel());
     } catch {
       break; // stdin closed (EOF from piped input, Ctrl+D, etc.) - exit cleanly
     }
@@ -50,7 +62,7 @@ async function main() {
 
   rl.close();
   await mcp.closeAll();
-  console.log("Hasta luego.");
+  printGoodbye();
 }
 
 /**
@@ -73,7 +85,7 @@ async function runAgentTurn(
       .map((block) => block.text)
       .join("\n");
     if (text) {
-      console.log(`Bot > ${text}\n`);
+      printAssistant(text);
     }
 
     if (response.stop_reason !== "tool_use") break;
@@ -84,7 +96,7 @@ async function runAgentTurn(
       const input = block.input as Record<string, unknown>;
 
       if (block.name === GUARDED_WRITE_TOOL && input.confirmado === true && !confirmationGate.isConfirmedByUser()) {
-        console.log(`  [bloqueado] ${block.name}: falta confirmacion del usuario en un mensaje nuevo`);
+        printToolBlocked(block.name, "falta confirmacion del usuario en un mensaje nuevo");
         toolResults.push({
           type: "tool_result",
           tool_use_id: block.id,
@@ -97,7 +109,7 @@ async function runAgentTurn(
         continue;
       }
 
-      console.log(`  [herramienta] ${block.name}(${JSON.stringify(input)})`);
+      printToolCall(block.name, input);
       try {
         const result = await mcp.callTool(block.name, input);
         if (block.name === GUARDED_WRITE_TOOL) {
@@ -106,12 +118,9 @@ async function runAgentTurn(
         }
         toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
       } catch (error) {
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: `Error: ${error instanceof Error ? error.message : String(error)}`,
-          is_error: true,
-        });
+        const message = error instanceof Error ? error.message : String(error);
+        printToolError(message);
+        toolResults.push({ type: "tool_result", tool_use_id: block.id, content: `Error: ${message}`, is_error: true });
       }
     }
     conversation.addUserMessage(toolResults);
@@ -119,6 +128,6 @@ async function runAgentTurn(
 }
 
 main().catch((error) => {
-  console.error("Error fatal en el chatbot:", error);
+  printFatalError(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });

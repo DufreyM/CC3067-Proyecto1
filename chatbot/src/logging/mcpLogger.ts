@@ -1,5 +1,6 @@
 import { mkdirSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
+import chalk from "chalk";
 import { config } from "../config.js";
 
 export type McpLogDirection = "request" | "response";
@@ -28,7 +29,7 @@ export class McpLogger {
   log(entry: Omit<McpLogEntry, "timestamp">): void {
     const fullEntry: McpLogEntry = { timestamp: new Date().toISOString(), ...entry };
     const arrow = entry.direction === "request" ? "->" : "<-";
-    console.log(`[MCP ${arrow} ${entry.serverName}] ${entry.method}`);
+    console.log(chalk.dim(`  [MCP ${arrow} ${entry.serverName}] ${entry.method}`));
     appendFileSync(this.filePath, JSON.stringify(fullEntry) + "\n", "utf-8");
   }
 }

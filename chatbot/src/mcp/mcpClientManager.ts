@@ -5,6 +5,7 @@ import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { Tool } from "@anthropic-ai/sdk/resources/messages";
 import type { McpLogger } from "../logging/mcpLogger.js";
 import { mcpServers, type McpServerConfig } from "./serversConfig.js";
+import { printServerStatus } from "../ui/console.js";
 
 const TOOL_NAME_SEPARATOR = "__";
 
@@ -30,11 +31,8 @@ export class McpClientManager {
       try {
         await this.connectServer(serverConfig);
       } catch (error) {
-        console.warn(
-          `[MCP] No se pudo conectar al servidor "${serverConfig.name}": ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+        const message = error instanceof Error ? error.message : String(error);
+        printServerStatus(serverConfig.name, false, message);
       }
     }
   }
@@ -49,7 +47,7 @@ export class McpClientManager {
     await client.connect(transport);
     this.servers.push({ name: serverConfig.name, client });
     const via = serverConfig.transport === "http" ? `http, ${serverConfig.url}` : "stdio";
-    console.log(`[MCP] Conectado a servidor "${serverConfig.name}" (${via})`);
+    printServerStatus(serverConfig.name, true, via);
   }
 
   async listAnthropicTools(): Promise<Tool[]> {
