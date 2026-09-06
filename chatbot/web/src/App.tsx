@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bubble, Sender } from "@ant-design/x";
 import type { BubbleListProps } from "@ant-design/x";
-import { Avatar, Badge, Layout, Space, Tag, Typography, theme } from "antd";
+import { Avatar, Badge, Layout, Space, Switch, Tag, Typography, theme } from "antd";
 import { CheckCircleFilled, CloseCircleFilled, RobotOutlined, ToolOutlined, UserOutlined } from "@ant-design/icons";
 import ReactMarkdown from "react-markdown";
 import { useChatSocket } from "./useChatSocket";
@@ -54,7 +54,17 @@ const EXAMPLE_PROMPTS: { server: string; example: string }[] = [
 const DEFAULT_PLACEHOLDER = "Escribe tu mensaje...";
 
 export default function App() {
-  const { connected, servers, toolsSummary, items, waitingForReply, sendUserMessage } = useChatSocket();
+  const {
+    connected,
+    servers,
+    toolsSummary,
+    items,
+    waitingForReply,
+    sendUserMessage,
+    classmatesEnabled,
+    togglingClassmates,
+    toggleClassmates,
+  } = useChatSocket();
   const [inputValue, setInputValue] = useState("");
   const { token } = theme.useToken();
 
@@ -87,6 +97,15 @@ export default function App() {
           </Title>
           <Badge status={connected ? "success" : "error"} text={connected ? "Conectado" : "Desconectado"} />
           {toolsSummary && <Text type="secondary">{toolsSummary.total} herramientas MCP</Text>}
+          <Space style={{ marginLeft: "auto" }}>
+            <Text type="secondary">Servidores de compañeros</Text>
+            <Switch
+              checked={classmatesEnabled}
+              loading={togglingClassmates}
+              onChange={toggleClassmates}
+              disabled={!connected}
+            />
+          </Space>
         </div>
         <Space wrap size={[8, 4]}>
           {servers.map((server) => (

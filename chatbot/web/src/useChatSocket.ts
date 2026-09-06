@@ -22,6 +22,8 @@ export function useChatSocket() {
   const [toolsSummary, setToolsSummary] = useState<ToolsSummaryInfo | null>(null);
   const [items, setItems] = useState<BubbleItemType[]>([]);
   const [waitingForReply, setWaitingForReply] = useState(false);
+  const [classmatesEnabled, setClassmatesEnabled] = useState(false);
+  const [togglingClassmates, setTogglingClassmates] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -39,6 +41,10 @@ export function useChatSocket() {
           break;
         case "tools_summary":
           setToolsSummary({ total: message.total, byServer: message.byServer });
+          break;
+        case "classmates_status":
+          setClassmatesEnabled(message.enabled);
+          setTogglingClassmates(message.toggling);
           break;
         case "assistant_message":
           setItems((prev) => [...prev, { key: newKey(), role: "ai", content: message.text }]);
@@ -83,5 +89,20 @@ export function useChatSocket() {
     wsRef.current.send(JSON.stringify({ type: "user_message", text: trimmed }));
   }
 
-  return { connected, servers, toolsSummary, items, waitingForReply, sendUserMessage };
+  function toggleClassmates(enabled: boolean): void {
+    if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ type: "toggle_classmates", enabled }));
+  }
+
+  return {
+    connected,
+    servers,
+    toolsSummary,
+    items,
+    waitingForReply,
+    sendUserMessage,
+    classmatesEnabled,
+    togglingClassmates,
+    toggleClassmates,
+  };
 }

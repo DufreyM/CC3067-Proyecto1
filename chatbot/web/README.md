@@ -5,6 +5,12 @@ Proyecto 1 chatbot (extra credit, section 4.1: "implemente una UI... mediante un
 same agent/tool-calling core the console chatbot uses ([`chatbot/src/agent/runAgentTurn.ts`](../src/agent/runAgentTurn.ts)),
 over a WebSocket backend ([`chatbot/src/server.ts`](../src/server.ts)) - no logic is duplicated between the two UIs.
 
+The backend always connects the "own" servers (filesystem, git, DocFinder) at startup. Classmates' servers
+(functionality 6) start off - most of the grading and all of the day-to-day work is about the own side - and can
+be turned on or off at runtime from the **"Servidores de compañeros"** switch in the header, with no restart: it
+sends `{type: "toggle_classmates", enabled}` over the same WebSocket, the backend connects/disconnects just that
+group of MCP servers, and every connected browser tab gets a fresh `server_status`/`tools_summary` broadcast.
+
 ## Running
 
 Two processes, from the repository root:
