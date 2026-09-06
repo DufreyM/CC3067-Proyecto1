@@ -27,13 +27,19 @@ This project is being built incrementally. Current state:
 - [x] Classmates' MCP servers, local via stdio (hotel, HR/construction, coffee shop, library - 4, two required)
 - [x] One classmate's server reached "as remote", over the local network (generic stdio-to-HTTP bridge)
 - [x] Extra: terminal UI with HCI-driven color/layout choices
+- [x] Extra: web chatbot UI (React + Ant Design / `@ant-design/x`)
 - [ ] Final report
 
 ## Repository layout
 
 ```
 CC3067-Proyecto1/
-├── chatbot/                  # Console host: Anthropic API client, MCP clients, logging
+├── chatbot/
+│   ├── src/
+│   │   ├── agent/             # Shared agent/tool-calling loop (used by both UIs)
+│   │   ├── index.ts           # Console host entrypoint
+│   │   └── server.ts          # WebSocket backend for the web UI
+│   └── web/                   # React + Ant Design frontend (extra credit)
 └── tools/
     └── mcp-network-bridge/   # Generic stdio-to-HTTP bridge for the local-network demo
 ```
@@ -151,6 +157,14 @@ Other usability choices: a compact per-server tool count instead of dumping all 
 short list of example prompts on startup so a first-time user knows what to ask, and truncated tool-call
 arguments so a large payload doesn't push the conversation off-screen.
 
+## Extra: web chatbot UI
+
+[`chatbot/web`](chatbot/web) is a React + [Ant Design](https://ant.design) / [`@ant-design/x`](https://x.ant.design)
+frontend talking to [`chatbot/src/server.ts`](chatbot/src/server.ts) (a WebSocket backend) over the exact same
+agent core the console UI uses - see [`chatbot/web/README.md`](chatbot/web/README.md) for details and screenshots
+of what it looks like. Both UIs are full implementations of the same chatbot; use whichever fits the moment (the
+console one is always available per the assignment's base requirement of running from a terminal).
+
 ## Usage
 
 ```bash
@@ -162,6 +176,9 @@ npm run chatbot
 
 Type your message and press enter. Type `salir` (or `exit`/`quit`) to end the
 session.
+
+For the web UI instead, run `npm run web-server` and `npm run web-client` in two terminals - see
+[`chatbot/web/README.md`](chatbot/web/README.md).
 
 ## License
 
