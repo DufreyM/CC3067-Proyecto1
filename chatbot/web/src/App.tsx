@@ -45,10 +45,22 @@ const roles: NonNullable<BubbleListProps["role"]> = {
   },
 };
 
+const EXAMPLE_PROMPTS: { server: string; example: string }[] = [
+  { server: "hotel", example: "¿cuantas habitaciones libres hay hoy?" },
+  { server: "docfinder", example: "¿donde esta la documentacion de autenticacion del proyecto X?" },
+  { server: "rrhh", example: "¿cuantos dias de vacaciones tiene el empleado 5?" },
+  { server: "brewops", example: "recomiendame un cafe floral para V60" },
+];
+const DEFAULT_PLACEHOLDER = "Escribe tu mensaje...";
+
 export default function App() {
   const { connected, servers, toolsSummary, items, waitingForReply, sendUserMessage } = useChatSocket();
   const [inputValue, setInputValue] = useState("");
   const { token } = theme.useToken();
+
+  const connectedNames = new Set(servers.filter((s) => s.ok).map((s) => s.name));
+  const example = EXAMPLE_PROMPTS.find((hint) => connectedNames.has(hint.server));
+  const placeholder = example ? `Escribe tu mensaje... (ej. "${example.example}")` : DEFAULT_PLACEHOLDER;
 
   function handleSubmit(text: string) {
     sendUserMessage(text);
@@ -100,7 +112,7 @@ export default function App() {
           onSubmit={handleSubmit}
           loading={waitingForReply}
           disabled={!connected}
-          placeholder='Escribe tu mensaje... (ej. "¿cuantas habitaciones libres hay hoy?")'
+          placeholder={placeholder}
           style={{ maxWidth: 900, margin: "0 auto" }}
         />
       </Footer>
