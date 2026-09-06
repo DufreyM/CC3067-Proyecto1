@@ -10,6 +10,14 @@ import { runAgentTurn } from "./agent/runAgentTurn.js";
 import { classmateServers, ownServers } from "./mcp/serversConfig.js";
 
 const PORT = Number(process.env.WEB_SERVER_PORT ?? 8787);
+// Loopback-only by default: this backend spends real Anthropic API credits
+// per message, so it must not be reachable from the LAN unless you
+// explicitly ask for that (e.g. WEB_SERVER_HOST=0.0.0.0 for a real demo on
+// another machine, alongside WEB_UI_ACCESS_CODE below).
+const HOST = process.env.WEB_SERVER_HOST ?? "127.0.0.1";
+// Optional shared password gating the chat itself. Unset (the default)
+// means no gate - fine for a purely local, single-user run.
+const ACCESS_CODE = process.env.WEB_UI_ACCESS_CODE;
 const CLASSMATE_NAMES = classmateServers.map((s) => s.name);
 
 /**
@@ -22,12 +30,16 @@ const CLASSMATE_NAMES = classmateServers.map((s) => s.name);
  * Every browser tab shares the same MCP connections but gets its own
  * conversation history and confirmation-gate state.
  */
-type ClientToServerMessage = { type: "user_message"; text: string } | { type: "toggle_classmates"; enabled: boolean };
+type ClientToServerMessage =
+  | { type: "user_message"; text: string }
+  | { type: "toggle_classmates"; enabled: boolean }
+  | { type: "auth"; code: string };
 
 type ServerToClientMessage =
   | { type: "server_status"; servers: ServerConnectionResult[] }
   | { type: "tools_summary"; total: number; byServer: { server: string; count: number }[] }
   | { type: "classmates_status"; enabled: boolean; toggling: boolean }
+  | { type: "auth_status"; required: boolean; authenticated: boolean }
   | { type: "assistant_message"; text: string }
   | { type: "tool_call"; name: string; input: unknown }
   | { type: "tool_blocked"; name: string; reason: string }
@@ -96,12 +108,14 @@ async function main() {
     clients.add(ws);
     ws.on("close", () => clients.delete(ws));
 
+    let authenticated = !ACCESS_CODE;
     const conversation = new ConversationManager();
     const confirmationGate = new ConfirmationGate();
 
     send(ws, { type: "server_status", servers: connections });
     send(ws, { type: "tools_summary", ...toolsSummary(tools) });
     send(ws, { type: "classmates_status", enabled: classmatesOn, toggling: togglingClassmates });
+    send(ws, { type: "auth_status", required: !!ACCESS_CODE, authenticated });
 
     ws.on("message", async (raw) => {
       let message: ClientToServerMessage;
@@ -109,6 +123,16 @@ async function main() {
         message = JSON.parse(raw.toString());
       } catch {
         send(ws, { type: "fatal_error", message: "Mensaje invalido" });
+        return;
+      }
+
+      if (message.type === "auth") {
+        authenticated = message.code === ACCESS_CODE;
+        send(ws, { type: "auth_status", required: !!ACCESS_CODE, authenticated });
+        return;
+      }
+      if (!authenticated) {
+        send(ws, { type: "fatal_error", message: "Codigo de acceso requerido o incorrecto." });
         return;
       }
 
@@ -139,7 +163,15 @@ async function main() {
     });
   });
 
-  httpServer.listen(PORT, () => console.log(`Web UI backend escuchando en ws://localhost:${PORT}/ws`));
+  httpServer.listen(PORT, HOST, () => {
+    console.log(`Web UI backend escuchando en ws://${HOST}:${PORT}/ws`);
+    if (HOST !== "127.0.0.1" && !ACCESS_CODE) {
+      console.warn(
+        "[seguridad] WEB_SERVER_HOST no es localhost y WEB_UI_ACCESS_CODE no esta configurado: " +
+          "cualquiera en la red puede usar tu chatbot (y tus creditos de API). Configura WEB_UI_ACCESS_CODE.",
+      );
+    }
+  });
 
   const shutdown = async () => {
     wss.close();
