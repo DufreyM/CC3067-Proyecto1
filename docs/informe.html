@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Proyecto 1 - Uso de un protocolo existente</title>
+<style>
+  @page { size: Letter; margin: 2.2cm 2cm; }
+  body {
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.55;
+    font-size: 11.5pt;
+    max-width: 780px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 17pt; margin: 26px 0 14px 0; }
+  h2 { font-size: 14pt; margin-top: 28px; margin-bottom: 8px; }
+  h3 { font-size: 12pt; margin-top: 18px; margin-bottom: 6px; }
+  p { margin: 8px 0; text-align: justify; }
+  li { margin: 4px 0; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    background: #f2f2f2;
+    padding: 1px 4px;
+    font-size: 10.3pt;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 10.3pt;
+  }
+  th, td {
+    border: 1px solid #999;
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #eee; }
+  .portada {
+    min-height: 23cm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    page-break-after: always;
+  }
+  .portada p { margin: 4px 0; text-align: center; }
+  .portada-mid p { font-size: 16pt; }
+  .portada-sub p { font-size: 11.5pt; color: #444; }
+</style>
+</head>
+<body>
+
+<div class="portada">
+  <div class="portada-top">
+    <p><strong>UNIVERSIDAD DEL VALLE DE GUATEMALA</strong></p>
+    <p>Facultad de Ingeniería</p>
+    <p>Departamento de Ciencias de la Computación</p>
+    <p>CC3067 - Redes</p>
+    <p>Sección 30</p>
+  </div>
+  <div class="portada-mid">
+    <p><strong>Proyecto 1</strong></p>
+    <p><strong>Uso de un protocolo existente</strong></p>
+  </div>
+  <div class="portada-sub">
+    <p>Chatbot con Model Context Protocol (MCP)</p>
+  </div>
+  <div class="portada-names">
+    <p>Leonardo Dufrey Mejía Mejía</p>
+    <p>Carnet 23648</p>
+  </div>
+  <div class="portada-date">
+    <p>GUATEMALA, 5 de septiembre de 2026</p>
+  </div>
+</div>
+
+<h1>1. Introducción</h1>
+<p>Este proyecto consistió en construir un chatbot que usa el Model Context Protocol (MCP) para conectarse a un modelo de lenguaje de Anthropic y, al mismo tiempo, darle acceso a herramientas externas: un sistema de archivos, un repositorio de git, un buscador de documentación interna que diseñé yo mismo (DocFinder), cuatro servidores hechos por compañeros del curso, y una forma de usar uno de esos servidores como si fuera remoto, a través de la red local.</p>
+<p>La idea del proyecto es entender MCP no solo de forma teórica sino implementándolo: cómo se conecta un cliente a un servidor, qué pasa cuando el modelo decide usar una herramienta, cómo se le muestra ese contexto de vuelta, y qué problemas reales aparecen cuando uno intenta conectar piezas que otras personas construyeron con supuestos distintos a los propios.</p>
+
+<h1>2. Arquitectura general</h1>
+<p>El chatbot (el "anfitrión" del protocolo) está escrito en TypeScript sobre Node.js. Tiene dos interfaces que comparten exactamente la misma lógica de fondo:</p>
+<ul>
+  <li>Una consola de texto, que es la forma base que pide el proyecto.</li>
+  <li>Una interfaz web hecha con React y Ant Design, que agregué como uno de los puntos extra.</li>
+</ul>
+<p>Ambas interfaces usan el mismo núcleo: un administrador de clientes MCP (<code>McpClientManager</code>) que se conecta a cada servidor configurado, ya sea por stdio o por HTTP, y un loop de agente (<code>runAgentTurn</code>) que le manda el mensaje del usuario al modelo, revisa si la respuesta pide usar una herramienta, la ejecuta contra el servidor correspondiente, y le devuelve el resultado al modelo hasta que este responde con texto en vez de una llamada a herramienta. Separar esta lógica en un solo lugar fue una decisión que tomé después de tener la consola funcionando, cuando empecé la interfaz web y me di cuenta de que iba a terminar duplicando el mismo código de manejo de herramientas dos veces si no lo sacaba a un módulo aparte.</p>
+
+<h1>3. Funcionalidades implementadas</h1>
+<p>El chatbot se conecta a la API de Anthropic (uso el modelo Haiku por costo) y mantiene el historial de la conversación en memoria durante toda la sesión, así que preguntas de seguimiento como "¿en qué fecha nació?" después de preguntar por una persona funcionan sin que el usuario tenga que repetir el contexto. Cada intercambio con los servidores MCP queda registrado tanto en consola como en un archivo <code>.jsonl</code> por sesión, con marca de tiempo, servidor, dirección (solicitud o respuesta) y el contenido completo del mensaje.</p>
+<p>Sobre los servidores: además de mi propio servidor (DocFinder), el chatbot usa los dos oficiales que pide el proyecto, filesystem y git, restringidos a una carpeta de trabajo dentro del propio proyecto para no darle al modelo acceso al resto del disco. También conecté cuatro servidores hechos por compañeros (el mínimo que pedía el enunciado eran dos): uno de reservas de hotel, uno de recursos humanos de una constructora, uno de una cafetería de especialidad, y uno de una biblioteca. Los detalles de cada uno están en la sección de dificultades, porque cada uno me enseñó algo distinto sobre qué tan variado puede ser un servidor MCP "correcto" según quien lo escribió.</p>
+<p>Un punto que vale la pena aclarar: a mitad del proyecto, el catedrático aclaró en clase que el punto de crear un servidor remoto propio en la nube quedaba reemplazado por conectar el chatbot al servidor de un compañero pero tratándolo como si fuera remoto, probado a través de la red local en vez de stdio, y que el análisis con Wireshark quedaba fuera del alcance por completo. Esto cambió bastante el diseño de esa parte del proyecto, y lo explico en la sección 6.</p>
+
+<h1>4. Especificación de los servidores MCP desarrollados</h1>
+
+<h2>4.1 DocFinder</h2>
+<p>DocFinder simula un asistente de documentación interna estilo Confluence para una empresa de tecnología: permite buscar páginas por tema en vez de por título exacto, respetando permisos según el rol del usuario, y ayuda a detectar quién de un mismo tema tiene documentación duplicada u obsoleta. Como no podía conectarme a un Confluence real, la base de datos es un mock hecho a mano: 15 páginas repartidas en 4 espacios, con etiquetas, autores, fechas y reglas de visibilidad (pública, restringida por equipo, o restringida por rol).</p>
+<p>Vive en un repositorio público aparte, como pide el enunciado: <code>github.com/DufreyM/CC3067-Proyecto1-docfinder</code>. Corre por stdio con el SDK oficial de TypeScript. Expone cuatro herramientas:</p>
+<table>
+<tr><th>Herramienta</th><th>Parámetros</th><th>Qué hace</th></tr>
+<tr><td><code>list_users</code></td><td>ninguno</td><td>Lista los usuarios de prueba y su rol, para poder probar el filtrado de permisos con distintos usuarios.</td></tr>
+<tr><td><code>search_documentation</code></td><td><code>query</code>, <code>user_id</code>, <code>project_key</code> opcional, <code>doc_type</code> opcional, <code>limit</code> opcional</td><td>Busca páginas por relevancia (título, etiquetas, contenido, proyecto) y filtra el resultado según lo que ese usuario puede ver.</td></tr>
+<tr><td><code>find_duplicates_or_outdated</code></td><td><code>topic</code>, <code>user_id</code></td><td>Agrupa páginas del mismo tema, marca la más reciente como vigente y el resto como posibles duplicados, con una advertencia si detecta que unas describen un proceso manual y otras uno automatizado.</td></tr>
+<tr><td><code>summarize_project</code></td><td><code>project_key</code>, <code>user_id</code></td><td>Devuelve todo lo que ese usuario puede ver de un proyecto, agrupado por tipo de documento.</td></tr>
+</table>
+<p>La búsqueda no usa embeddings ni nada parecido a semántica real; es un puntaje por coincidencia de palabras en título, etiquetas y contenido, con más peso al título, y quitando tildes para que "autenticación" coincida con "autenticacion". Lo dejé así a propósito: para el alcance del proyecto me pareció más razonable tener algo simple y explicable que meter un modelo de embeddings solo para impresionar, y de hecho lo documenté como una limitación conocida en el README del propio servidor.</p>
+
+<h2>4.2 mcp-network-bridge</h2>
+<p>Esta es la pieza que construí para la funcionalidad revisada de "servidor remoto por red local". Es una herramienta genérica que toma cualquier servidor MCP que hable por stdio — sin modificarle nada — y lo vuelve a exponer por HTTP en un puerto, para que otra máquina en la misma red se pueda conectar exactamente igual que si lo estuviera corriendo localmente. Internamente hace de puente: por un lado es un cliente MCP normal que habla con el proceso hijo por stdio, y por el otro atiende peticiones HTTP y las traduce a llamadas <code>tools/list</code> o <code>tools/call</code> sobre ese cliente.</p>
+<p>El endpoint es uno solo, <code>/mcp</code>, que recibe POST con un mensaje JSON-RPC 2.0 y responde en JSON plano (no uso streaming SSE porque no lo necesitaba: mi caso de uso es una sola pregunta con una sola respuesta, no una conversación que se transmite en pedazos). El chatbot se conecta a esto con el cliente oficial <code>StreamableHTTPClientTransport</code> del SDK, así que del lado del chatbot no hay ningún código especial: el servidor "remoto" aparece en la lista de servidores exactamente igual que uno local, solo que con transporte HTTP en vez de stdio.</p>
+
+<h1>5. Sobre el análisis de la comunicación con Wireshark</h1>
+<p>Este punto del enunciado original quedó fuera del proyecto: el catedrático indicó en clase que ya no había que capturar ni analizar tráfico con Wireshark, como parte del mismo cambio que reemplazó el servidor remoto propio por la conexión al servidor de un compañero vía red local. Por lo mismo no incluyo capturas de paquetes ni un desglose de capas basado en tráfico real.</p>
+<p>Lo que sí puedo describir, sin necesidad de una captura, es qué capas están involucradas en la comunicación del bridge: a nivel de aplicación viaja JSON-RPC 2.0 sobre HTTP; ese HTTP corre sobre TCP en la capa de transporte, que es quien garantiza que los bytes lleguen completos y en orden entre el chatbot y el bridge; TCP a su vez va empacado en paquetes IP en la capa de red, que son los que efectivamente se enrutan entre las dos máquinas dentro de la misma red local; y todo eso finalmente se transmite como tramas de la capa de enlace (Ethernet o Wi-Fi, según cómo esté conectada cada máquina) dentro de ese mismo segmento de red.</p>
+
+<h1>6. Dificultades y cómo se resolvieron</h1>
+
+<h3>El servidor git oficial no tiene git_init</h3>
+<p>Al conectar el servidor git oficial de Anthropic (<code>mcp-server-git</code>) me di cuenta de que la versión publicada actualmente no trae una herramienta para inicializar un repositorio, a diferencia de una versión anterior de referencia que sí la tenía. Esto es un problema porque el escenario que pide el proyecto es justo "crear un repositorio, crear un README, agregarlo y hacer commit", y sin <code>git_init</code> el modelo no tiene forma de dar el primer paso. Lo resolví con un pequeño script que corre una sola vez al arrancar el chatbot y prepara un repositorio git vacío en la carpeta de trabajo si todavía no existe uno; a partir de ahí, crear el README, hacer el <code>add</code> y el <code>commit</code> sí pasa en vivo, a través de MCP.</p>
+
+<h3>Un bug real en el SDK oficial de MCP</h3>
+<p>Cuando construí el bridge, mi primer intento fue usar las clases que trae el propio SDK de MCP para servidores HTTP (<code>Server</code> más <code>StreamableHTTPServerTransport</code>). Devolvía un 500 vacío sin ningún mensaje de error, incluso en una prueba mínima aislada, sin nada de mi código de por medio. Después de descartar varias hipótesis (versión de dependencias, orden de negociación de capacidades, el cliente interno de stdio) confirmé con una petición cruda por curl que el problema estaba en esa parte del SDK y no en cómo lo estaba usando. Terminé escribiendo a mano el subconjunto no-streaming del protocolo Streamable HTTP, que para mi caso (una petición, una respuesta) es bastante simple, y dejé el lado del cliente sin tocar, usando el <code>StreamableHTTPClientTransport</code> oficial sin modificaciones.</p>
+
+<h3>Servidores de compañeros con supuestos distintos</h3>
+<p>Cada servidor de compañero que integré llegó con su propio conjunto de sorpresas. El de biblioteca necesita una base de datos MySQL real con credenciales fijas en el código, a diferencia de los otros tres que traen su propio archivo de datos autocontenido; tuve que levantar un contenedor de Docker con esas mismas credenciales y cargar su esquema y sus datos de prueba a mano. Ese mismo servidor además devuelve caracteres con tilde mal codificados (por ejemplo "Educación" sale como "EducaciÃ³n") porque su conexión a la base de datos no especifica el charset correcto; no es algo que yo pueda corregir sin tocar su código, así que lo dejé documentado como una limitación conocida de ese servidor.</p>
+<p>El servidor de hotel, en cambio, me enseñó algo de diseño más que un bug: su herramienta para crear una reservación solo escribe en la base de datos si se llama una segunda vez con una bandera de confirmación, y su propio README advierte que el anfitrión (mi chatbot) no debe dejar que el modelo llame la vista previa y la confirmación en la misma respuesta, porque solo el anfitrión puede saber si de verdad hubo un mensaje nuevo del usuario en medio. Implementé una compuerta que lleva la cuenta de en qué turno de conversación se mostró la vista previa, y solo permite la confirmación si eso pasó en un turno anterior, no en el mismo.</p>
+
+<h3>El costo de la API se estaba disparando</h3>
+<p>En algún punto me di cuenta de que cada pregunta, por simple que fuera, estaba costando más de lo que esperaba. El motivo era que la API de Anthropic no guarda estado entre llamadas: cada mensaje que se manda incluye otra vez todo el historial de la conversación y, en mi caso, las definiciones completas de las cerca de sesenta herramientas MCP conectadas, que por sí solas son unos 10,400 tokens. Con varios servidores conectados, esa lista se estaba pagando completa en cada llamada del loop del agente, incluso cuando el modelo no terminaba usando ninguna herramienta.</p>
+<p>La solución fue activar el prompt caching que ofrece Anthropic: se marca un punto de corte en la última herramienta de la lista y otro en el último bloque del historial, así que ese contenido se escribe una vez al caché y las siguientes llamadas lo leen a una fracción del precio normal en vez de pagarlo completo otra vez. Lo comprobé con los números reales que devuelve la API: la primera llamada mostró <code>cache_creation_input_tokens: 10413</code> y la siguiente, <code>cache_read_input_tokens: 10413</code> con creación en cero. De paso agregué una línea en consola que muestra cuántos tokens se leyeron del caché en cada respuesta, para tener esto visible durante las pruebas.</p>
+
+<h3>El backend de la interfaz web quedaba expuesto en la red</h3>
+<p>Al construir la interfaz web me di cuenta, ya usándola, de que el servidor que atiende el WebSocket estaba escuchando en todas las interfaces de red por el comportamiento por defecto de Node, no solo en mi propia máquina. Eso significa que cualquiera conectado a la misma red hubiera podido abrir esa interfaz y usar mi cuenta de Anthropic para preguntar lo que quisiera, sin que yo me diera cuenta. Lo cambié para que por defecto escuche solo en localhost, y agregué un código de acceso opcional que, si se configura, bloquea la interfaz con una pantalla de acceso hasta que se ingresa el código correcto por ese mismo WebSocket.</p>
+
+<h3>Otros ajustes menores</h3>
+<p>Hubo varios problemas más chicos que fueron apareciendo sobre la marcha: el chatbot de consola truena si la entrada estándar se cierra de golpe (algo que solo pasa probando con entrada por pipe, no escribiendo en vivo), procesos de prueba que se quedaban ocupando un puerto y tocaba matarlos a mano antes de volver a levantar el bridge, y tener que separar los servidores de compañeros como algo que se puede prender y apagar — incluso en caliente, desde la propia interfaz web — porque casi toda la calificación depende de mi propio código y no tenía sentido que correr el chatbot todos los días dependiera de tener cuatro entornos externos (Python, Go, MySQL) siempre listos.</p>
+
+<h1>7. Lecciones aprendidas</h1>
+<p>La lección más grande del proyecto fue que MCP como protocolo es sencillo — es JSON-RPC con tres o cuatro métodos — pero eso no significa que integrar servidores de terceros lo sea. Cada servidor que conecté vino con una idea distinta de qué tan estricto ser con el esquema, qué tanto documentar, y qué responsabilidades le corresponden al servidor contra el anfitrión (el caso de la compuerta de confirmación del hotel es el ejemplo más claro). Entender esa división de responsabilidades terminó siendo más importante que el protocolo en sí.</p>
+<p>También aprendí a no asumir que una librería oficial está libre de bugs solo por ser oficial, y a no descartar un problema de "seguro es mi código" sin antes aislarlo con una prueba mínima — el caso del SDK de MCP me hizo perder bastante tiempo hasta que probé con curl directo y confirmé que el problema no era mío.</p>
+<p>Por último, el tema de los costos de la API me hizo prestarle atención a algo que al inicio no tenía en la lista de prioridades: un chatbot que funciona correctamente puede seguir siendo un mal chatbot si sale caro de operar o si queda expuesto a que cualquiera lo use sin permiso. Ninguna de las dos cosas estaba en el enunciado original, pero terminaron siendo parte importante del proyecto.</p>
+
+<h1>8. Conclusiones</h1>
+<p>El chatbot terminó cumpliendo con todas las funcionalidades base del proyecto: conexión a la API con contexto de conversación, registro de todas las interacciones con los servidores MCP, uso de los servidores oficiales de filesystem y git, un servidor propio no trivial (DocFinder), y la integración con servidores de compañeros tanto de forma local como a través de la red local, superando el mínimo de dos servidores pedido con cuatro. Además implementé los dos puntos extra de interfaz de usuario: una consola con colores con significado consistente y una interfaz web completa con React y Ant Design que comparte todo el núcleo de lógica con la consola.</p>
+<p>Lo que más me deja este proyecto es la parte de integración: escribir mi propio servidor fue relativamente directo porque yo controlaba ambos lados, cliente y servidor. Lo que de verdad puso a prueba lo que entendía del protocolo fue conectar piezas que no controlaba, escritas por otras personas con otros criterios, y tener que decidir en cada caso si el problema era del servidor, de mi cliente, o del protocolo mismo.</p>
+
+</body>
+</html>
