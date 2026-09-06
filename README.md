@@ -165,6 +165,22 @@ agent core the console UI uses - see [`chatbot/web/README.md`](chatbot/web/READM
 of what it looks like. Both UIs are full implementations of the same chatbot; use whichever fits the moment (the
 console one is always available per the assignment's base requirement of running from a terminal).
 
+## Design note: prompt caching
+
+With ~60 MCP tools connected, their JSON schemas alone are around 10,000 tokens - and every call the Messages API
+is stateless, so that whole schema list (plus the growing conversation history) is normally resent, at full
+price, on every single message. [`chatbot/src/llm/anthropicClient.ts`](chatbot/src/llm/anthropicClient.ts) marks
+an [Anthropic prompt-cache](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) breakpoint on
+the last tool definition and on the last block of the growing history, so:
+
+- the ~10k tokens of tool schemas are written to cache once and then read back at roughly 10% of the normal input
+  price on every later call in the same 5-minute window, instead of being billed at full price every time;
+- the conversation history is cached incrementally too, so each turn is only billed in full for what was *added*
+  since the previous call, not the entire transcript again.
+
+Verified with real `usage` figures from the API: first call `cache_creation_input_tokens: 10413`, next call
+`cache_read_input_tokens: 10413, cache_creation_input_tokens: 0`.
+
 ## Usage
 
 ```bash
