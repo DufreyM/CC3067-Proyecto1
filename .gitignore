@@ -11,3 +11,10 @@ build/
 # Sandbox used by the Filesystem/Git MCP servers - bootstrapped automatically at
 # startup (see workspaceBootstrap.ts), including its own nested .git repo.
 chatbot/workspace/
+
+# Personal, changes per demo - add classmates' servers here without touching code.
+# See mcp-servers.local.example.json for the format.
+mcp-servers.local.json
+
+# Where classmates' repos get cloned for ad-hoc testing (see README).
+external-mcp-servers/

@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isWindows = process.platform === "win32";
@@ -123,6 +124,42 @@ export const classmateServers: McpServerConfig[] = [
     url: process.env.MCP_REMOTE_URL ?? "http://localhost:4100/mcp",
   },
 ];
+
+/**
+ * Ad-hoc classmates' servers, added without touching any code: clone the
+ * repo anywhere (e.g. under external-mcp-servers/), follow ITS OWN README to
+ * install dependencies, then add one entry here describing how to launch it
+ * - see mcp-servers.local.example.json for the format. This file is
+ * gitignored (personal, changes per demo) and entirely optional; missing or
+ * empty is the normal case. Loaded entries join classmateServers, so the
+ * existing ENABLE_CLASSMATE_SERVERS toggle (env var, or the web UI switch)
+ * turns them on/off exactly like the four servers already wired in above.
+ */
+function loadAdHocServers(): McpServerConfig[] {
+  const repoRoot = resolve(__dirname, "../../..");
+  const configPath = join(repoRoot, "mcp-servers.local.json");
+  if (!existsSync(configPath)) return [];
+
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(configPath, "utf-8"));
+    if (!Array.isArray(parsed)) throw new Error("el archivo debe contener un arreglo JSON");
+
+    return parsed.filter((entry): entry is McpServerConfig => {
+      const record = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : undefined;
+      const valid =
+        !!record &&
+        typeof record.name === "string" &&
+        (record.transport === "http" ? typeof record.url === "string" : typeof record.command === "string");
+      if (!valid) console.warn(`[mcp-servers.local.json] entrada invalida, se omite: ${JSON.stringify(entry)}`);
+      return valid;
+    });
+  } catch (error) {
+    console.warn(`[mcp-servers.local.json] no se pudo leer: ${error instanceof Error ? error.message : error}`);
+    return [];
+  }
+}
+
+classmateServers.push(...loadAdHocServers());
 
 const classmateServersEnabled = process.env.ENABLE_CLASSMATE_SERVERS === "true";
 

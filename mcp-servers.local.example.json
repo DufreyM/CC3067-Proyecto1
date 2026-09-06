@@ -1,0 +1,13 @@
+[
+  {
+    "name": "compañero-nuevo",
+    "command": "C:\\path\\a\\su-repo\\.venv\\Scripts\\python.exe",
+    "args": ["-m", "su_modulo_del_servidor"],
+    "cwd": "C:\\path\\a\\su-repo"
+  },
+  {
+    "name": "otro-remoto",
+    "transport": "http",
+    "url": "http://localhost:4100/mcp"
+  }
+]
