@@ -26,6 +26,7 @@ This project is being built incrementally. Current state:
 - [x] Custom local MCP server: DocFinder
 - [x] Classmates' MCP servers, local via stdio (hotel, HR/construction, coffee shop, library - 4, two required)
 - [x] One classmate's server reached "as remote", over the local network (generic stdio-to-HTTP bridge)
+- [x] Extra: terminal UI with HCI-driven color/layout choices
 - [ ] Final report
 
 ## Repository layout
@@ -132,6 +133,23 @@ README explicitly warns that a host must not let the model call the preview and 
 in the same reply, since only the host can see that a real user message arrived in between. This chatbot enforces
 that in [`chatbot/src/mcp/confirmationGate.ts`](chatbot/src/mcp/confirmationGate.ts): a `confirmado: true` call is
 rejected unless the preview happened in an earlier user turn.
+
+## Extra: terminal UI with HCI considerations
+
+The console UI ([`chatbot/src/ui/console.ts`](chatbot/src/ui/console.ts)) uses a small, deliberate color system
+rather than decorative colors: each color has exactly one meaning everywhere in the session, borrowing the
+traffic-light convention people already know instead of an arbitrary palette to learn -
+
+- **cyan** - the user's own words
+- **green** - the assistant's reply (the successful result of a turn)
+- **yellow** - a tool call happening in the background (caution/attention, not an error)
+- **red** - an error or a blocked action
+- **gray/dim** - system status and the raw MCP protocol log (present for functionality 3, but visually
+  de-emphasized so it doesn't compete with the actual conversation)
+
+Other usability choices: a compact per-server tool count instead of dumping all ~60 tool names in one line, a
+short list of example prompts on startup so a first-time user knows what to ask, and truncated tool-call
+arguments so a large payload doesn't push the conversation off-screen.
 
 ## Usage
 
