@@ -60,7 +60,7 @@ const bibliotecaBackendPath =
  * (functionality 5). Most of the grading and all of the day-to-day
  * development is about these, so they are always connected.
  */
-const ownServers: McpServerConfig[] = [
+export const ownServers: McpServerConfig[] = [
   {
     name: "filesystem",
     command: "npx",
@@ -87,7 +87,7 @@ const ownServers: McpServerConfig[] = [
  * ENABLE_CLASSMATE_SERVERS=true in .env when you actually want to demo this
  * functionality.
  */
-const classmateServers: McpServerConfig[] = [
+export const classmateServers: McpServerConfig[] = [
   {
     name: "hotel",
     command: process.env.HOTEL_SERVER_PYTHON ?? venvPython(hotelPath),

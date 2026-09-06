@@ -34,6 +34,10 @@ export class McpClientManager {
   async connectAll(configs: McpServerConfig[] = mcpServers): Promise<ServerConnectionResult[]> {
     const results: ServerConnectionResult[] = [];
     for (const serverConfig of configs) {
+      if (this.isConnected(serverConfig.name)) {
+        results.push({ name: serverConfig.name, ok: true, detail: "ya conectado" });
+        continue;
+      }
       try {
         const detail = await this.connectServer(serverConfig);
         results.push({ name: serverConfig.name, ok: true, detail });
@@ -58,7 +62,24 @@ export class McpClientManager {
     return serverConfig.transport === "http" ? `http, ${serverConfig.url}` : "stdio";
   }
 
+  isConnected(name: string): boolean {
+    return this.servers.some((s) => s.name === name);
+  }
+
+  /** Closes and forgets the given servers, so a later listAnthropicTools() no longer offers their tools. */
+  async disconnectByNames(names: string[]): Promise<void> {
+    const toRemove = new Set(names);
+    const removed = this.servers.filter((s) => toRemove.has(s.name));
+    for (const server of removed) {
+      await server.client.close();
+    }
+    const remaining = this.servers.filter((s) => !toRemove.has(s.name));
+    this.servers.length = 0;
+    this.servers.push(...remaining);
+  }
+
   async listAnthropicTools(): Promise<Tool[]> {
+    this.toolOwners.clear();
     const tools: Tool[] = [];
     for (const server of this.servers) {
       this.logger.log({ serverName: server.name, direction: "request", method: "tools/list", payload: {} });
