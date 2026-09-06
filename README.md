@@ -3,7 +3,7 @@
 Console chatbot (host) that talks to the Anthropic API and uses the **Model
 Context Protocol (MCP)** to extend the LLM with external tools: a local
 filesystem server, a git server, a custom local server (**DocFinder**, an
-internal documentation search assistant), and three servers built by
+internal documentation search assistant), and four servers built by
 classmates - one of which is also reached over the local network instead of
 spawned locally, through a small generic bridge built for this project.
 
@@ -24,7 +24,7 @@ This project is being built incrementally. Current state:
 - [x] Log every MCP request/response
 - [x] Filesystem MCP server + Git MCP server (official)
 - [x] Custom local MCP server: DocFinder
-- [x] Classmates' MCP servers, local via stdio (hotel, HR/construction, coffee shop - 3, two required)
+- [x] Classmates' MCP servers, local via stdio (hotel, HR/construction, coffee shop, library - 4, two required)
 - [x] One classmate's server reached "as remote", over the local network (generic stdio-to-HTTP bridge)
 - [ ] Final report
 
@@ -43,7 +43,7 @@ The custom local MCP server **DocFinder** lives in its own public repository
 folder of this repository (default expected path) or point `DOCFINDER_SERVER_PATH` in `.env` at wherever you
 cloned it.
 
-For functionality 6, this chatbot connects to three classmates' local MCP servers (two are the assignment's
+For functionality 6, this chatbot connects to four classmates' local MCP servers (two are the assignment's
 minimum), each cloned as a sibling of this repo under `external-mcp-servers/`:
 
 | Server | Repo | Language | Command this project runs |
@@ -51,8 +51,14 @@ minimum), each cloned as a sibling of this repo under `external-mcp-servers/`:
 | `hotel` | [JosFer720/hotel-mcp-server](https://github.com/JosFer720/hotel-mcp-server) | Python | `.venv/Scripts/python.exe -m hotel_mcp` |
 | `rrhh` | [NESHGP04/mcp-server-rrhh-construccion](https://github.com/NESHGP04/mcp-server-rrhh-construccion) | Python | `.venv/Scripts/python.exe server.py` |
 | `brewops` | [Jonialen/brewops-mcp](https://github.com/Jonialen/brewops-mcp) | Go | compiled `brewops.exe` binary |
+| `biblioteca` | [tismajo/CC3067-Proyecto1](https://github.com/tismajo/CC3067-Proyecto1) (`backend/mcp_servers/local_library`) | Python | `.venv/Scripts/python.exe -m mcp_servers.local_library.server` |
 
 Every path can be overridden with an env var (see `.env.example`) if you cloned them somewhere else.
+
+`biblioteca` is a full project repo rather than an independent one, has no README, and its server needs a real
+MySQL database instead of a self-seeding file - see "Provisioning MySQL for `biblioteca`" below. It also returns
+Spanish accented characters mojibake'd (e.g. `EducaciÃ³n`) because its DB connection doesn't set `charset=utf8mb4` -
+a bug in that server, left as-is since this project only consumes it over stdio.
 
 ### Reaching a classmate's server "as remote", over the local network
 
@@ -95,11 +101,29 @@ git clone https://github.com/NESHGP04/mcp-server-rrhh-construccion.git
 cd mcp-server-rrhh-construccion && python -m venv .venv && ./.venv/Scripts/python -m pip install -r requirements.txt && cd ..
 
 git clone https://github.com/Jonialen/brewops-mcp.git
-cd brewops-mcp && go build -o brewops.exe . && cd ../..
+cd brewops-mcp && go build -o brewops.exe . && cd ..
+
+git clone https://github.com/tismajo/CC3067-Proyecto1.git tismajo-proyecto1
+cd tismajo-proyecto1/backend && python -m venv .venv && ./.venv/Scripts/python -m pip install -r requirements.txt && cd ../../..
 ```
 
-Any of these three servers that fails to start (wrong path, missing runtime) is skipped with a warning - the
-chatbot still runs with whichever servers did connect.
+Any of these four servers that fails to start (wrong path, missing runtime, no database) is skipped with a
+warning - the chatbot still runs with whichever servers did connect.
+
+### Provisioning MySQL for `biblioteca`
+
+Unlike the other three, this server expects a running MySQL instance with credentials hardcoded in its
+`db_connection.py` (`libraryu` / `B1b!10` / database `librarydb` on `localhost:3306`, overridable via `DB_*` env
+vars). Using Docker:
+
+```bash
+docker run --name library-mysql -e MYSQL_ROOT_PASSWORD=rootpass -e MYSQL_DATABASE=librarydb \
+  -e MYSQL_USER=libraryu -e "MYSQL_PASSWORD=B1b!10" -p 3306:3306 -d mysql:8
+
+# wait a few seconds for it to accept connections, then load schema + seed data:
+docker exec -i library-mysql mysql -uroot -prootpass librarydb < external-mcp-servers/tismajo-proyecto1/backend/db/01.sql
+docker exec -i library-mysql mysql -uroot -prootpass librarydb < external-mcp-servers/tismajo-proyecto1/backend/db/02.sql
+```
 
 ### Design note: confirming writes across turns
 
