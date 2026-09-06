@@ -51,7 +51,10 @@ folder of this repository (default expected path) or point `DOCFINDER_SERVER_PAT
 cloned it.
 
 For functionality 6, this chatbot connects to four classmates' local MCP servers (two are the assignment's
-minimum), each cloned as a sibling of this repo under `external-mcp-servers/`:
+minimum), each cloned as a sibling of this repo under `external-mcp-servers/`. **These are off by default** -
+most of the grading and all of the day-to-day work is about `filesystem`/`git`/`docfinder`, so a normal run
+doesn't need four extra runtimes (Python venvs, Go, MySQL) up. Set `ENABLE_CLASSMATE_SERVERS=true` in `.env` to
+turn them on for a functionality-6 demo:
 
 | Server | Repo | Language | Command this project runs |
 | --- | --- | --- | --- |
