@@ -83,6 +83,7 @@ async function main() {
           onToolCall: (name, input) => send(ws, { type: "tool_call", name, input }),
           onToolBlocked: (name, reason) => send(ws, { type: "tool_blocked", name, reason }),
           onToolError: (name, msg) => send(ws, { type: "tool_error", name, message: msg }),
+          onUsage: (usage) => console.log(`[tokens] in:${usage.inputTokens} out:${usage.outputTokens} cache_read:${usage.cacheReadTokens} cache_write:${usage.cacheCreationTokens}`),
         });
         send(ws, { type: "turn_complete" });
       } catch (error) {

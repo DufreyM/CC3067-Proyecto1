@@ -11,11 +11,20 @@ import { ConfirmationGate, readBooleanField } from "../mcp/confirmationGate.js";
  */
 const GUARDED_WRITE_TOOL = "hotel__crear_reservacion";
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+}
+
 export interface AgentTurnHooks {
   onAssistantText: (text: string) => void;
   onToolCall: (name: string, input: Record<string, unknown>) => void;
   onToolBlocked: (name: string, reason: string) => void;
   onToolError: (name: string, message: string) => void;
+  /** Reported after every LLM call so a host can show/log prompt-cache savings. */
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 /**
@@ -35,6 +44,13 @@ export async function runAgentTurn(
   while (true) {
     const response = await sendMessage({ history: conversation.getHistory(), tools });
     conversation.addAssistantMessage(response.content);
+
+    hooks.onUsage?.({
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+      cacheCreationTokens: response.usage.cache_creation_input_tokens ?? 0,
+    });
 
     const text = response.content
       .filter((block) => block.type === "text")

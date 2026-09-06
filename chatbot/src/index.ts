@@ -17,6 +17,7 @@ import {
   printToolCall,
   printToolError,
   printToolsSummary,
+  printUsage,
   userPromptLabel,
 } from "./ui/console.js";
 
@@ -56,6 +57,7 @@ async function main() {
       onToolCall: printToolCall,
       onToolBlocked: printToolBlocked,
       onToolError: (name, message) => printToolError(`${name}: ${message}`),
+      onUsage: printUsage,
     });
   }
 

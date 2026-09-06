@@ -88,6 +88,18 @@ export function printToolError(message: string): void {
   console.log(c.error(`  x ${message}`));
 }
 
+export function printUsage(usage: {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+}): void {
+  const parts = [`in:${usage.inputTokens}`, `out:${usage.outputTokens}`];
+  if (usage.cacheReadTokens > 0) parts.push(`cache_read:${usage.cacheReadTokens} (~90% mas barato)`);
+  if (usage.cacheCreationTokens > 0) parts.push(`cache_write:${usage.cacheCreationTokens}`);
+  console.log(c.dim(`  [tokens] ${parts.join(" ")}`));
+}
+
 export function printFatalError(message: string): void {
   console.error(c.error(`\nError fatal: ${message}`));
 }
