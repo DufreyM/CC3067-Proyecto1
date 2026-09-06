@@ -35,7 +35,7 @@ async function main() {
   for (const { name, ok, detail } of connections) printServerStatus(name, ok, detail);
   const tools = await mcp.listAnthropicTools();
   printToolsSummary(tools);
-  printExampleHints();
+  printExampleHints(new Set(connections.filter((c) => c.ok).map((c) => c.name)));
 
   const rl = createInterface({ input: stdin, output: stdout });
 

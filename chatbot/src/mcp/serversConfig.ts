@@ -56,13 +56,11 @@ const bibliotecaBackendPath =
   process.env.BIBLIOTECA_SERVER_PATH ?? join(externalServersDir, "tismajo-proyecto1", "backend");
 
 /**
- * Official MCP servers used for functionality 4 of the project.
- * - filesystem: @modelcontextprotocol/server-filesystem (npm, sandboxed to workspaceDir)
- * - git: mcp-server-git (PyPI, official Anthropic MCP server for git)
- * Plus the custom local server for functionality 5 (DocFinder) and four
- * classmates' servers for functionality 6.
+ * Own servers: the official ones (functionality 4) plus DocFinder
+ * (functionality 5). Most of the grading and all of the day-to-day
+ * development is about these, so they are always connected.
  */
-export const mcpServers: McpServerConfig[] = [
+const ownServers: McpServerConfig[] = [
   {
     name: "filesystem",
     command: "npx",
@@ -80,6 +78,16 @@ export const mcpServers: McpServerConfig[] = [
     args: ["tsx", "src/index.ts"],
     cwd: docfinderPath,
   },
+];
+
+/**
+ * Classmates' servers (functionality 6, worth one point). Off by default so
+ * daily runs don't need Python venvs, Go, Docker/MySQL and the network
+ * bridge all up just to chat with your own stuff - set
+ * ENABLE_CLASSMATE_SERVERS=true in .env when you actually want to demo this
+ * functionality.
+ */
+const classmateServers: McpServerConfig[] = [
   {
     name: "hotel",
     command: process.env.HOTEL_SERVER_PYTHON ?? venvPython(hotelPath),
@@ -115,3 +123,7 @@ export const mcpServers: McpServerConfig[] = [
     url: process.env.MCP_REMOTE_URL ?? "http://localhost:4100/mcp",
   },
 ];
+
+const classmateServersEnabled = process.env.ENABLE_CLASSMATE_SERVERS === "true";
+
+export const mcpServers: McpServerConfig[] = [...ownServers, ...(classmateServersEnabled ? classmateServers : [])];

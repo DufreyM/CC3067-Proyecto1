@@ -38,12 +38,24 @@ export function printBanner(): void {
   console.log(c.dim('Escribe tu mensaje y presiona enter. Escribe "salir" para terminar.\n'));
 }
 
-export function printExampleHints(): void {
+const EXAMPLE_HINTS: { server: string; example: string }[] = [
+  { server: "docfinder", example: "¿donde esta la documentacion de autenticacion del proyecto X?" },
+  { server: "hotel", example: "¿cuantas habitaciones libres hay hoy?" },
+  { server: "rrhh", example: "¿cuantos dias de vacaciones tiene el empleado 5?" },
+  { server: "brewops", example: "recomiendame un cafe floral para V60" },
+  { server: "biblioteca", example: "busca libros sobre redes" },
+];
+
+/** Only shows hints for servers that actually connected, so a lean run doesn't suggest dead examples. */
+export function printExampleHints(connectedServers: Set<string>): void {
+  const hints = EXAMPLE_HINTS.filter((hint) => connectedServers.has(hint.server));
+  if (hints.length === 0) return;
+
   console.log(c.dim("Ejemplos de lo que puedes preguntar:"));
-  console.log(c.dim('  - "¿donde esta la documentacion de autenticacion del proyecto X?"  (DocFinder)'));
-  console.log(c.dim('  - "¿cuantas habitaciones libres hay hoy?"                          (hotel)'));
-  console.log(c.dim('  - "¿cuantos dias de vacaciones tiene el empleado 5?"               (RRHH)'));
-  console.log(c.dim('  - "recomiendame un cafe floral para V60"                           (BrewOps)\n'));
+  for (const hint of hints) {
+    console.log(c.dim(`  - "${hint.example}"  (${hint.server})`));
+  }
+  console.log();
 }
 
 export function printServerStatus(name: string, ok: boolean, detail: string): void {
