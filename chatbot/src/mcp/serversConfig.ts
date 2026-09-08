@@ -115,11 +115,13 @@ export const classmateServers: McpServerConfig[] = [
     // Revised functionality 6: connect to a classmate's MCP server "as if
     // remote", over the local network, using the exact same tool-calling
     // code path as every stdio server above - only the transport differs.
-    // Run tools/mcp-network-bridge in front of any of the three stdio
-    // servers to produce this URL (see that tool's README); for a real LAN
-    // demo across two machines, point MCP_REMOTE_URL at the host's LAN IP
-    // instead of localhost.
-    name: "hotel-remote",
+    // Run tools/mcp-network-bridge in front of ANY classmate's stdio server
+    // to produce this URL (see that tool's README) - it doesn't have to be
+    // hotel, so the name is configurable too (MCP_REMOTE_NAME), rather than
+    // hardcoded to whichever server this project happened to test first.
+    // For a real LAN demo across two machines, point MCP_REMOTE_URL at the
+    // host's LAN IP instead of localhost.
+    name: process.env.MCP_REMOTE_NAME ?? "remoto",
     transport: "http",
     url: process.env.MCP_REMOTE_URL ?? "http://localhost:4100/mcp",
   },
