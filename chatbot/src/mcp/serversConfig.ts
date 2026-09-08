@@ -85,6 +85,18 @@ export const ownServers: McpServerConfig[] = [
     args: ["tsx", "src/index.ts"],
     cwd: docfinderPath,
   },
+  {
+    // Functionality 7 (per the original PDF, before the in-class revision to
+    // functionality 6): an own MCP server that actually runs remotely, in
+    // the cloud, not just over the local network. Reuses DocFinder's exact
+    // tool logic (search.ts, permissions.ts, tools/*.ts) behind a hand-rolled
+    // fetch handler instead of the stdio transport - see
+    // docfinder-mcp-server/src/worker.ts. Deployed to Cloudflare Workers.
+    // Override with CLOUD_REMOTE_URL if redeployed under a different name.
+    name: "docfinder-cloud",
+    transport: "http",
+    url: process.env.CLOUD_REMOTE_URL ?? "https://docfinder-mcp-remote.yerfud.workers.dev/mcp",
+  },
 ];
 
 /**
