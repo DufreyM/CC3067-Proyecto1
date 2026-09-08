@@ -69,8 +69,13 @@ export const ownServers: McpServerConfig[] = [
     args: ["-y", "@modelcontextprotocol/server-filesystem", workspaceDir],
   },
   {
+    // Uses whichever python is first on PATH by default, which breaks if a
+    // venv from a different project is active in the shell that starts the
+    // chatbot (it silently resolves to that venv's python instead of the one
+    // mcp-server-git was installed into). Override with GIT_SERVER_PYTHON to
+    // pin an absolute path and avoid depending on ambient shell state.
     name: "git",
-    command: "python",
+    command: process.env.GIT_SERVER_PYTHON ?? "python",
     args: ["-m", "mcp_server_git"],
     cwd: workspaceDir,
   },
