@@ -80,6 +80,7 @@
 <h1>1. Introducción</h1>
 <p>Este proyecto consistió en construir un chatbot que usa el Model Context Protocol (MCP) para conectarse a un modelo de lenguaje de Anthropic y, al mismo tiempo, darle acceso a herramientas externas: un sistema de archivos, un repositorio de git, un buscador de documentación interna que diseñé yo mismo (DocFinder), cuatro servidores hechos por compañeros del curso, y una forma de usar uno de esos servidores como si fuera remoto, a través de la red local.</p>
 <p>La idea del proyecto es entender MCP no solo de forma teórica sino implementándolo: cómo se conecta un cliente a un servidor, qué pasa cuando el modelo decide usar una herramienta, cómo se le muestra ese contexto de vuelta, y qué problemas reales aparecen cuando uno intenta conectar piezas que otras personas construyeron con supuestos distintos a los propios.</p>
+<p>Repositorio principal: <code>github.com/DufreyM/CC3067-Proyecto1</code> (privado, con acceso para el catedrático y los auxiliares).</p>
 
 <h1>2. Arquitectura general</h1>
 <p>El chatbot (el "anfitrión" del protocolo) está escrito en TypeScript sobre Node.js. Tiene dos interfaces que comparten exactamente la misma lógica de fondo:</p>
